@@ -19,11 +19,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Check current user session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user || null)
-      setLoading(false)
-    })
+    const initializeAuth = async () => {
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession()
+        setUser(session?.user || null)
+      } catch (error) {
+        console.log("[v0] Error checking session:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    initializeAuth()
 
     // Listen for auth changes
     const {
@@ -37,26 +46,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signUp = async (phone: string, password: string, name: string) => {
     try {
-      console.log('Attempting signup for phone:', phone)
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: `${phone}@kabadiwala.local`,
         password,
-        options: {
-          data: {
-            name,
-            phone,
-          },
-        },
       })
 
-      if (authError) {
-        console.error('Auth error:', authError)
-        throw new Error(authError.message || 'Signup failed')
-      }
+      if (authError) throw authError
 
-      console.log('Auth signup successful:', authData.user?.id)
-
-      // Create user profile - RLS policy should allow this after signup
+      // Create user profile
       if (authData.user) {
         const { error: profileError } = await supabase.from("user_profiles").insert({
           id: authData.user.id,
@@ -67,39 +64,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           total_earnings: 0,
         })
 
-        if (profileError) {
-          console.error('Profile creation error:', profileError)
-          throw new Error(profileError.message || 'Profile creation failed')
-        }
-        
-        console.log('User profile created successfully')
+        if (profileError) throw profileError
       }
-
-      // Sign out after registration so user must login explicitly
-      await supabase.auth.signOut()
-      console.log('User signed out after registration')
     } catch (error) {
-      console.error('SignUp error:', error)
       throw error
     }
   }
 
   const signIn = async (phone: string, password: string) => {
     try {
-      console.log('Attempting signin for phone:', phone)
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email: `${phone}@kabadiwala.local`,
         password,
       })
 
-      if (error) {
-        console.error('SignIn error:', error)
-        throw new Error(error.message || 'Login failed')
-      }
-      
-      console.log('SignIn successful:', data.user?.id)
+      if (error) throw error
     } catch (error) {
-      console.error('SignIn error:', error)
       throw error
     }
   }

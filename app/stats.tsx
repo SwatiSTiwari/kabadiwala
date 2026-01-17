@@ -1,8 +1,51 @@
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView } from "react-native"
+"use client"
+
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, ActivityIndicator } from "react-native"
 import { useRouter } from "expo-router"
+import { useAuth } from "../lib/auth-context"
+import { getDailyEarnings, getWasteBreakdown, getWeeklyHisaab } from "../lib/supabase-queries"
+import { useEffect, useState } from "react"
 
 export default function StatsScreen() {
   const router = useRouter()
+  const { user } = useAuth()
+  const [dailyData, setDailyData] = useState<any[]>([])
+  const [breakdown, setBreakdown] = useState<any[]>([])
+  const [weeklyStats, setWeeklyStats] = useState({ earning: 0, weight: 0 })
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (user?.id) {
+      loadStatsData()
+    }
+  }, [user?.id])
+
+  const loadStatsData = async () => {
+    try {
+      setLoading(true)
+      const daily = await getDailyEarnings(user!.id)
+      const wasteBreakdown = await getWasteBreakdown(user!.id)
+      const weekly = await getWeeklyHisaab(user!.id)
+
+      setDailyData(daily)
+      setBreakdown(wasteBreakdown)
+      setWeeklyStats({ earning: weekly.totalEarning, weight: weekly.totalWeight })
+    } catch (error) {
+      console.log("[v0] Error loading stats:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <ActivityIndicator size="large" color="#2E7D32" style={{ marginTop: 50 }} />
+      </SafeAreaView>
+    )
+  }
+
+  const maxEarning = Math.max(...dailyData.map((d) => d.earning), 1)
 
   return (
     <SafeAreaView style={styles.container}>
@@ -38,7 +81,7 @@ export default function StatsScreen() {
               </View>
             </View>
             <Text style={styles.cardLabel}>Is hafte ki kamaai</Text>
-            <Text style={styles.cardValue}>₹12,450</Text>
+            <Text style={styles.cardValue}>₹{weeklyStats.earning.toLocaleString()}</Text>
           </View>
           <View style={styles.statCard}>
             <View style={styles.statHeader}>
@@ -50,7 +93,7 @@ export default function StatsScreen() {
               </View>
             </View>
             <Text style={styles.cardLabel}>Kul wazan</Text>
-            <Text style={styles.cardValue}>450 kg</Text>
+            <Text style={styles.cardValue}>{weeklyStats.weight} kg</Text>
           </View>
         </View>
 
@@ -58,22 +101,27 @@ export default function StatsScreen() {
           <View style={styles.sectionHeader}>
             <View>
               <Text style={styles.sectionTitle}>Rozana ki Kamaai</Text>
-              <Text style={styles.sectionSub}>Avg. ₹1,780 / day</Text>
+              <Text style={styles.sectionSub}>Avg. ₹{Math.round(weeklyStats.earning / 7)} / day</Text>
             </View>
             <View style={styles.periodBadge}>
               <Text style={styles.periodText}>Is Hafte</Text>
             </View>
           </View>
           <View style={styles.chartContainer}>
-            {/* Simple CSS Bar Chart Simulation */}
-            {[40, 65, 35, 85, 50, 75, 30].map((h, i) => (
+            {dailyData.map((item, i) => (
               <View key={i} style={styles.barColumn}>
                 <View style={styles.barBg}>
                   <View
-                    style={[styles.barFill, { height: `${h}%`, backgroundColor: i === 3 ? "#FBC02D" : "#388E3C" }]}
+                    style={[
+                      styles.barFill,
+                      {
+                        height: `${(item.earning / maxEarning) * 100}%`,
+                        backgroundColor: item.earning === 0 ? "#E0E0E0" : "#388E3C",
+                      },
+                    ]}
                   />
                 </View>
-                <Text style={styles.barLabel}>{["Som", "Man", "Bud", "Gur", "Shu", "Sha", "Rav"][i]}</Text>
+                <Text style={styles.barLabel}>{item.day}</Text>
               </View>
             ))}
           </View>
@@ -90,14 +138,18 @@ export default function StatsScreen() {
           </View>
           <View style={styles.donutContainer}>
             <View style={styles.donut}>
-              <Text style={styles.donutTotal}>450kg</Text>
+              <Text style={styles.donutTotal}>{weeklyStats.weight}kg</Text>
               <Text style={styles.donutLabel}>Total</Text>
             </View>
             <View style={styles.legendContainer}>
-              <LegendItem color="#388E3C" label="Loha (Iron)" value="45%" />
-              <LegendItem color="#FBC02D" label="Plastic" value="30%" />
-              <LegendItem color="#1B5E20" label="Raddi (Paper)" value="15%" />
-              <LegendItem color="#E0E0E0" label="Kaanch (Glass)" value="10%" />
+              {breakdown.map((item) => (
+                <LegendItem
+                  key={item.type}
+                  color={getColorForType(item.type)}
+                  label={item.type}
+                  value={`${item.percentage}%`}
+                />
+              ))}
             </View>
           </View>
         </View>
@@ -108,6 +160,16 @@ export default function StatsScreen() {
       </TouchableOpacity>
     </SafeAreaView>
   )
+}
+
+function getColorForType(type: string): string {
+  const colors: Record<string, string> = {
+    Loha: "#388E3C",
+    "Raddi (Paper)": "#1B5E20",
+    Plastic: "#FBC02D",
+    Glass: "#E0E0E0",
+  }
+  return colors[type] || "#999"
 }
 
 function LegendItem({ color, label, value }: { color: string; label: string; value: string }) {

@@ -1,30 +1,139 @@
-import { View, Text, Image, TouchableOpacity, SafeAreaView, ScrollView, StyleSheet } from "react-native"
-import { useRouter } from "expo-router"
+"use client";
+import {
+  View,
+  Text,
+  Image,
+  TouchableOpacity,
+  ScrollView,
+  ActivityIndicator,
+  StyleSheet,
+  SafeAreaView,
+} from "react-native";
+import { useRouter } from "expo-router";
+import { useAuth } from "../../lib/auth-context";
+import {
+  getTodayEarnings,
+  getWeeklyHisaab,
+  getUserProfile,
+  getEntriesGroupedByDate,
+} from "../../lib/supabase-queries";
+import { useEffect, useState } from "react";
 import Profile from "../../assets/images/profile.png"
+import profile from "./profile";
+
 
 const TRANSACTIONS = [
-  { id: "1", type: "Raddi (Paper)", weight: "12 kg", rate: "₹12/kg", amount: "₹144", time: "10:30 AM", icon: "📰" },
-  { id: "2", type: "Loha (Iron)", weight: "5 kg", rate: "₹30/kg", amount: "₹150", time: "09:15 AM", icon: "🔨" },
-  { id: "3", type: "Plastic (Mixed)", weight: "8 kg", rate: "₹12/kg", amount: "₹96", time: "Yesterday", icon: "♻️" },
-]
+  {
+    id: "1",
+    type: "Raddi (Paper)",
+    weight: "12 kg",
+    rate: "₹12/kg",
+    amount: "₹144",
+    time: "10:30 AM",
+    icon: "📰",
+  },
+  {
+    id: "2",
+    type: "Loha (Iron)",
+    weight: "5 kg",
+    rate: "₹30/kg",
+    amount: "₹150",
+    time: "09:15 AM",
+    icon: "🔨",
+  },
+  {
+    id: "3",
+    type: "Plastic (Mixed)",
+    weight: "8 kg",
+    rate: "₹12/kg",
+    amount: "₹96",
+    time: "Yesterday",
+    icon: "♻️",
+  },
+];
 
 export default function HomeScreen() {
-  const router = useRouter()
+  const router = useRouter();
+  const { user } = useAuth();
+  const [userName, setUserName] = useState("Kabadiwala");
+  const [todayEarning, setTodayEarning] = useState(0);
+  const [weeklyEarning, setWeeklyEarning] = useState(0);
+  const [recentTransactions, setRecentTransactions] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (user?.id) {
+      loadHomeData();
+    }
+  }, [user?.id]);
+
+  const loadHomeData = async () => {
+    try {
+      setLoading(true);
+      // Fetch user profile to get actual name
+      const profile = await getUserProfile(user!.id);
+      setUserName(profile?.name || "Kabadiwala");
+
+      // Fetch today's and weekly earnings
+      const today = await getTodayEarnings(user!.id);
+      const weekly = await getWeeklyHisaab(user!.id);
+      setTodayEarning(today.totalEarning);
+      setWeeklyEarning(weekly.totalEarning);
+
+      // Fetch recent transactions (limit to 3)
+      const entries = await getEntriesGroupedByDate(user!.id);
+      const recentEntries: any[] = [];
+      for (const date in entries) {
+        recentEntries.push(...entries[date]);
+        if (recentEntries.length >= 3) break;
+      }
+      setRecentTransactions(recentEntries.slice(0, 3));
+    } catch (error) {
+      console.log("[v0] Error loading home data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getWasteIcon = (wasteType: string) => {
+    const icons: Record<string, string> = {
+      "Raddi (Paper)": "📰",
+      "Loha (Iron)": "🔨",
+      "Plastic (Mixed)": "♻️",
+      Plastic: "♻️",
+      Iron: "🔨",
+      Paper: "📰",
+    };
+    return icons[wasteType] || "📦";
+  };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <ActivityIndicator
+          size="large"
+          color="#2E7D32"
+          style={{ marginTop: 50 }}
+        />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 120 ,flexGrow: 1,
-}}
-
-
-        >
+      <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <View>
-            <Text style={styles.greeting}>Namaste,{"\n"}Rajesh Bhai 👋</Text>
+            <Text style={styles.greeting}>
+              Namaste,{"\n"}
+              {userName} 👋
+            </Text>
             <Text style={styles.subGreeting}>Aaj ka din shubh ho!</Text>
           </View>
-          <Image source={Profile} style={styles.avatar} />
+          <Image
+            source={Profile}
+            style={styles.avatar}
+          />
         </View>
 
         <View style={styles.statsContainer}>
@@ -33,7 +142,7 @@ export default function HomeScreen() {
               <Text style={styles.statLabel}>AAJ KI KAMAAI</Text>
               <Text style={styles.statIcon}>💵</Text>
             </View>
-            <Text style={styles.statValue}>₹ 1,250</Text>
+            <Text style={styles.statValue}>₹ {todayEarning}</Text>
             <View style={styles.statFooter}>
               <Text style={styles.trendIcon}>📈</Text>
               <Text style={styles.trendText}>Kal se 12% zyada</Text>
@@ -42,14 +151,21 @@ export default function HomeScreen() {
 
           <View style={[styles.statCard, { backgroundColor: "#FBC02D" }]}>
             <View style={styles.statHeader}>
-              <Text style={[styles.statLabel, { color: "#827717" }]}>IS HAFTE KA HISAAB</Text>
+              <Text style={[styles.statLabel, { color: "#827717" }]}>
+                IS HAFTE KA HISAAB
+              </Text>
               <Text style={styles.statIcon}>📅</Text>
             </View>
-            <Text style={[styles.statValue, { color: "#333" }]}>₹ 8,400</Text>
+            <Text style={[styles.statValue, { color: "#333" }]}>
+              ₹ {weeklyEarning}
+            </Text>
           </View>
         </View>
 
-        <TouchableOpacity style={styles.addAction} onPress={() => router.push("/add-entry")}>
+        <TouchableOpacity
+          style={styles.addAction}
+          onPress={() => router.push("/add-entry")}
+        >
           <View style={styles.plusCircle}>
             <Text style={styles.plusIcon}>+</Text>
           </View>
@@ -59,25 +175,32 @@ export default function HomeScreen() {
         <View style={styles.transactionSection}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Haal hi ke transactions</Text>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={() => router.push("/(tabs)/history")}>
               <Text style={styles.seeAllText}>Sab dekhein</Text>
             </TouchableOpacity>
           </View>
 
-          {TRANSACTIONS.map((item) => (
-            <View key={item.id} style={styles.transactionItem}>
+          {recentTransactions.map((item, index) => (
+            <View key={index} style={styles.transactionItem}>
               <View style={styles.itemIconContainer}>
-                <Text style={styles.itemIcon}>{item.icon}</Text>
+                <Text style={styles.itemIcon}>
+                  {getWasteIcon(item.waste_type)}
+                </Text>
               </View>
               <View style={styles.itemDetails}>
-                <Text style={styles.itemTitle}>{item.type}</Text>
+                <Text style={styles.itemTitle}>{item.waste_type}</Text>
                 <Text style={styles.itemSub}>
-                  {item.weight} • {item.rate}
+                  {item.weight} kg • ₹{item.rate_per_kg}/kg
                 </Text>
               </View>
               <View style={styles.itemAmountContainer}>
-                <Text style={styles.itemAmount}>{item.amount}</Text>
-                <Text style={styles.itemTime}>{item.time}</Text>
+                <Text style={styles.itemAmount}>₹{item.total_earning}</Text>
+                <Text style={styles.itemTime}>
+                  {new Date(item.created_at).toLocaleTimeString("en-US", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </Text>
               </View>
             </View>
           ))}
@@ -85,7 +208,7 @@ export default function HomeScreen() {
       </ScrollView>
       {/* Bottom nav removed - now handled by (tabs)/_layout.tsx */}
     </SafeAreaView>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
@@ -268,4 +391,4 @@ const styles = StyleSheet.create({
     color: "#748A9D",
     marginTop: 2,
   },
-})
+});

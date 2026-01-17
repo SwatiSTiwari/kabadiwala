@@ -114,3 +114,95 @@ export async function getEarningsByCategory(userId: string) {
 
   return categorized || {}
 }
+
+// Get all entries grouped by date (for history screen)
+export async function getEntriesGroupedByDate(userId: string) {
+  const { data, error } = await supabase
+    .from("waste_entries")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+
+  if (error) throw error
+
+  const grouped: Record<string, any[]> = {}
+  data?.forEach((entry) => {
+    const date = new Date(entry.created_at).toLocaleDateString("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+    })
+    if (!grouped[date]) grouped[date] = []
+    grouped[date].push(entry)
+  })
+
+  return grouped
+}
+
+// Get user stats (for profile screen)
+export async function getUserStats(userId: string) {
+  const { data: entries, error: entriesError } = await supabase
+    .from("waste_entries")
+    .select("total_earning, weight")
+    .eq("user_id", userId)
+
+  if (entriesError) throw entriesError
+
+  const totalEarnings = entries?.reduce((sum, e) => sum + e.total_earning, 0) || 0
+  const totalCollections = entries?.length || 0
+
+  return { totalEarnings, totalCollections }
+}
+
+// Get daily earnings for chart (for stats screen)
+export async function getDailyEarnings(userId: string, days = 7) {
+  const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().split("T")[0]
+
+  const { data, error } = await supabase
+    .from("waste_entries")
+    .select("created_at, total_earning")
+    .eq("user_id", userId)
+    .gte("created_at", startDate)
+
+  if (error) throw error
+
+  const dailyMap: Record<string, number> = {}
+  data?.forEach((entry) => {
+    const date = new Date(entry.created_at).toLocaleDateString("en-US", { weekday: "short" })
+    dailyMap[date] = (dailyMap[date] || 0) + entry.total_earning
+  })
+
+  const dayNames = ["Som", "Man", "Bud", "Gur", "Shu", "Sha", "Rav"]
+  return dayNames.map((day) => ({ day, earning: dailyMap[day] || 0 }))
+}
+
+// Get waste breakdown by category (for stats screen)
+export async function getWasteBreakdown(userId: string) {
+  const { data, error } = await supabase.from("waste_entries").select("waste_type, weight").eq("user_id", userId)
+
+  if (error) throw error
+
+  const breakdown: Record<string, number> = {}
+  data?.forEach((entry) => {
+    breakdown[entry.waste_type] = (breakdown[entry.waste_type] || 0) + entry.weight
+  })
+
+  const total = Object.values(breakdown).reduce((sum, w) => sum + w, 0)
+  return Object.entries(breakdown).map(([type, weight]) => ({
+    type,
+    weight,
+    percentage: Math.round((weight / total) * 100),
+  }))
+}
+
+// Add function to update user location
+export async function updateUserLocation(userId: string, location: string) {
+  const { data, error } = await supabase
+    .from("user_profiles")
+    .update({ location })
+    .eq("id", userId)
+    .select()
+
+  if (error) throw error
+  return data?.[0]
+}

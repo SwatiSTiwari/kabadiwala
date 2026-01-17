@@ -1,6 +1,9 @@
 "use client"
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView } from "react-native"
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView, ActivityIndicator } from "react-native"
 import { useRouter } from "expo-router"
+import { useAuth } from "../../lib/auth-context"
+import { getEntriesGroupedByDate } from "../../lib/supabase-queries"
+import { useEffect, useState } from "react"
 
 const HISTORY_DATA = [
   {
@@ -24,6 +27,49 @@ const HISTORY_DATA = [
 
 export default function HistoryScreen() {
   const router = useRouter()
+  const { user } = useAuth()
+  const [history, setHistory] = useState<Record<string, any[]>>({})
+  const [loading, setLoading] = useState(true)
+  const [totalEarnings, setTotalEarnings] = useState(0)
+  const [totalWeight, setTotalWeight] = useState(0)
+
+  useEffect(() => {
+    if (user?.id) {
+      loadHistory()
+    }
+  }, [user?.id])
+
+  const loadHistory = async () => {
+    try {
+      setLoading(true)
+      const grouped = await getEntriesGroupedByDate(user!.id)
+      setHistory(grouped)
+
+      // Calculate totals
+      let earnings = 0
+      let weight = 0
+      Object.values(grouped).forEach((entries) => {
+        entries.forEach((entry) => {
+          earnings += entry.total_earning
+          weight += entry.weight
+        })
+      })
+      setTotalEarnings(earnings)
+      setTotalWeight(weight)
+    } catch (error) {
+      console.log("[v0] Error loading history:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <ActivityIndicator size="large" color="#2E7D32" style={{ marginTop: 50 }} />
+      </SafeAreaView>
+    )
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -41,59 +87,71 @@ export default function HistoryScreen() {
         <View style={styles.summaryContainer}>
           <View style={[styles.summaryCard, { backgroundColor: "#2E7D32" }]}>
             <Text style={styles.summaryLabel}>Kul Kamai</Text>
-            <Text style={styles.summaryValue}>₹12,500</Text>
-            <Text style={styles.summaryTrend}>📈 +12% iss hafte</Text>
+            <Text style={styles.summaryValue}>₹{totalEarnings.toLocaleString()}</Text>
+            <Text style={styles.summaryTrend}>📈 All time</Text>
           </View>
           <View style={[styles.summaryCard, { backgroundColor: "#FFFDE7", borderWidth: 1, borderColor: "#FFF59D" }]}>
             <Text style={[styles.summaryLabel, { color: "#827717" }]}>Kul Wazan</Text>
-            <Text style={[styles.summaryValue, { color: "#333" }]}>450 kg</Text>
+            <Text style={[styles.summaryValue, { color: "#333" }]}>{totalWeight} kg</Text>
             <Text style={[styles.summaryTrend, { color: "#2E7D32" }]}>⌛ Verified</Text>
           </View>
         </View>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll}>
           <TouchableOpacity style={[styles.filterChip, styles.activeFilter]}>
-            <Text style={styles.activeFilterText}>Iss Hafte ✕</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.filterChip}>
-            <Text style={styles.filterText}>Aaj</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.filterChip}>
-            <Text style={styles.filterText}>Kal</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.filterChip}>
-            <Text style={styles.filterText}>Loha ⌄</Text>
+            <Text style={styles.activeFilterText}>All ✕</Text>
           </TouchableOpacity>
         </ScrollView>
 
-        {HISTORY_DATA.map((group) => (
-          <View key={group.id} style={styles.dateGroup}>
-            <Text style={styles.dateHeader}>{group.date}</Text>
-            {group.items.map((item) => (
+        {Object.entries(history).map(([date, items]) => (
+          <View key={date} style={styles.dateGroup}>
+            <Text style={styles.dateHeader}>{date}</Text>
+            {items.map((item) => (
               <View key={item.id} style={styles.transactionItem}>
                 <View style={styles.itemIconContainer}>
-                  <Text style={styles.itemIconText}>{item.icon}</Text>
+                  <Text style={styles.itemIconText}>{getWasteIcon(item.waste_type)}</Text>
                 </View>
                 <View style={styles.itemDetails}>
-                  <Text style={styles.itemTitle}>{item.title}</Text>
-                  <Text style={styles.itemSub}>{item.sub}</Text>
+                  <Text style={styles.itemTitle}>{item.waste_type}</Text>
+                  <Text style={styles.itemSub}>
+                    {item.weight} kg × ₹{item.rate_per_kg}/kg
+                  </Text>
                 </View>
                 <View style={styles.itemRight}>
-                  <Text style={styles.itemAmount}>{item.amount}</Text>
-                  <Text style={styles.itemTime}>{item.time}</Text>
+                  <Text style={styles.itemAmount}>₹{item.total_earning}</Text>
+                  <Text style={styles.itemTime}>
+                    {new Date(item.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                  </Text>
                 </View>
               </View>
             ))}
           </View>
         ))}
+
+        {Object.keys(history).length === 0 && (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyText}>No waste entries yet. Start adding some!</Text>
+          </View>
+        )}
       </ScrollView>
 
-      {/* Bottom nav removed - now handled by (tabs)/_layout.tsx */}
       <TouchableOpacity style={styles.fab} onPress={() => router.push("/add-entry")}>
         <Text style={styles.fabIcon}>+</Text>
       </TouchableOpacity>
     </SafeAreaView>
   )
+}
+
+function getWasteIcon(wasteType: string): string {
+  const icons: Record<string, string> = {
+    Plastic: "💧",
+    Loha: "🛠️",
+    "Raddi (Paper)": "📰",
+    "Mixed Waste": "🗑️",
+    Cardboard: "📦",
+    Glass: "🔷",
+  }
+  return icons[wasteType] || "♻️"
 }
 
 const styles = StyleSheet.create({
@@ -170,4 +228,6 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   fabIcon: { color: "white", fontSize: 32, fontWeight: "300" },
+  emptyState: { flex: 1, justifyContent: "center", alignItems: "center", marginTop: 50 },
+  emptyText: { fontSize: 16, color: "#666", textAlign: "center" },
 })

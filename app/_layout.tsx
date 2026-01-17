@@ -7,7 +7,7 @@ function RootNavigator() {
   const { user, loading } = useAuth()
 
   if (loading) {
-    // Show splash while checking auth state
+    // Show blank screen while checking auth state
     return (
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(auth)" />
@@ -15,7 +15,6 @@ function RootNavigator() {
     )
   }
 
-  // Show tabs if authenticated, auth if not
   return (
     <Stack screenOptions={{ headerShown: false }}>
       {user ? (
