@@ -1,23 +1,51 @@
 "use client"
 
-
 import { useState } from "react"
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, TextInput, ScrollView } from "react-native"
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, TextInput, ScrollView, Alert } from "react-native"
 import { useRouter } from "expo-router"
+import { useAuth } from "@/lib/auth-context"
+import { addWasteEntry } from "@/lib/supabase-queries"
 
 const CATEGORIES = [
-  { id: "1", name: "Plastic", rate: "12/kg", icon: "🧴" },
-  { id: "2", name: "Loha", rate: "25/kg", icon: "🌋" },
-  { id: "3", name: "Paper", rate: "8/kg", icon: "📄" },
+  { id: "plastic", name: "Plastic", rate: "12", icon: "🧴" },
+  { id: "loha", name: "Loha", rate: "25", icon: "🌋" },
+  { id: "raddi", name: "Paper", rate: "8", icon: "📄" },
+  { id: "glass", name: "Glass", rate: "5", icon: "🥤" },
+  { id: "mixed", name: "Mixed", rate: "3", icon: "♻️" },
 ]
 
 export default function AddEntryScreen() {
   const router = useRouter()
-  const [selectedCat, setSelectedCat] = useState("1")
+  const { user } = useAuth()
+  const [selectedCat, setSelectedCat] = useState("plastic")
   const [weight, setWeight] = useState("0")
   const [rate, setRate] = useState("12")
+  const [loading, setLoading] = useState(false)
 
   const total = Number.parseFloat(weight || "0") * Number.parseFloat(rate || "0")
+
+  const handleSave = async () => {
+    if (!user) {
+      Alert.alert("Error", "You must be logged in")
+      return
+    }
+
+    if (Number.parseFloat(weight) <= 0) {
+      Alert.alert("Error", "Weight must be greater than 0")
+      return
+    }
+
+    setLoading(true)
+    try {
+      await addWasteEntry(user.id, selectedCat, Number.parseFloat(weight), Number.parseFloat(rate))
+      Alert.alert("Success", "Entry saved!")
+      router.back()
+    } catch (error) {
+      Alert.alert("Error", error instanceof Error ? error.message : "Failed to save entry")
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -35,7 +63,10 @@ export default function AddEntryScreen() {
             <TouchableOpacity
               key={cat.id}
               style={[styles.categoryCard, selectedCat === cat.id && styles.selectedCard]}
-              onPress={() => setSelectedCat(cat.id)}
+              onPress={() => {
+                setSelectedCat(cat.id)
+                setRate(cat.rate)
+              }}
             >
               <View style={[styles.categoryIconCircle, selectedCat === cat.id && styles.selectedIconCircle]}>
                 <Text style={styles.categoryIconText}>{cat.icon}</Text>
@@ -56,7 +87,13 @@ export default function AddEntryScreen() {
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Kitna wajan (kg)?</Text>
           <View style={styles.inputWrapper}>
-            <TextInput style={styles.input} keyboardType="numeric" value={weight} onChangeText={setWeight} />
+            <TextInput
+              style={styles.input}
+              keyboardType="decimal-pad"
+              value={weight}
+              onChangeText={setWeight}
+              editable={!loading}
+            />
             <Text style={styles.inputSuffix}>kg</Text>
           </View>
         </View>
@@ -64,7 +101,13 @@ export default function AddEntryScreen() {
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Daam per kilo (₹)</Text>
           <View style={styles.inputWrapper}>
-            <TextInput style={styles.input} keyboardType="numeric" value={rate} onChangeText={setRate} />
+            <TextInput
+              style={styles.input}
+              keyboardType="decimal-pad"
+              value={rate}
+              onChangeText={setRate}
+              editable={!loading}
+            />
             <Text style={styles.inputSuffix}>₹/kg</Text>
           </View>
         </View>
@@ -79,9 +122,13 @@ export default function AddEntryScreen() {
       </ScrollView>
 
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.saveButton} onPress={() => router.back()}>
+        <TouchableOpacity
+          style={[styles.saveButton, loading && { opacity: 0.6 }]}
+          onPress={handleSave}
+          disabled={loading}
+        >
           <Text style={styles.saveIcon}>💾</Text>
-          <Text style={styles.saveText}>Save Karo</Text>
+          <Text style={styles.saveText}>{loading ? "Saving..." : "Save Karo"}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -128,15 +175,17 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     marginBottom: 40,
+    flexWrap: "wrap",
   },
   categoryCard: {
     width: "30%",
     backgroundColor: "white",
     borderRadius: 20,
-    padding: 16,
+    padding: 12,
     alignItems: "center",
     borderWidth: 1,
     borderColor: "#EEE",
+    marginBottom: 12,
   },
   selectedCard: {
     borderColor: "#2E7D32",
@@ -159,12 +208,12 @@ const styles = StyleSheet.create({
     fontSize: 28,
   },
   categoryName: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: "700",
     color: "#444",
   },
   categoryRate: {
-    fontSize: 12,
+    fontSize: 11,
     color: "#888",
     marginTop: 2,
   },
@@ -173,7 +222,7 @@ const styles = StyleSheet.create({
   },
   checkmark: {
     position: "absolute",
-    top: 0,
+    top: -2,
     right: -2,
     backgroundColor: "#4CAF50",
     width: 20,
