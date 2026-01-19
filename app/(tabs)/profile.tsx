@@ -1,160 +1,165 @@
-'use client';
+"use client";
 
+import { useRouter } from "expo-router";
+import { useEffect, useState } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
+  ActivityIndicator,
+  Alert,
+  Linking,
+  Modal,
   SafeAreaView,
   ScrollView,
-  ActivityIndicator,
-  TextInput,
-  Modal,
-  Linking,
   Share,
-  Alert,
-} from "react-native"
-import { useRouter } from "expo-router"
-import { useAuth } from "../../lib/auth-context"
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { useAuth } from "../../lib/auth-context";
 import {
+  exportUserData,
+  getLanguagePreference,
   getUserProfile,
   getUserStats,
-  updateUserLocation,
-  exportUserData,
   updateLanguagePreference,
-  getLanguagePreference,
-} from "../../lib/supabase-queries"
-import { useEffect, useState } from "react"
-import * as Sharing from "expo-sharing"
+  updateUserLocation,
+} from "../../lib/supabase-queries";
 
 export default function ProfileScreen() {
-  const router = useRouter()
-  const { user, signOut } = useAuth()
-  const [profile, setProfile] = useState<any>(null)
-  const [stats, setStats] = useState({ totalEarnings: 0, totalCollections: 0 })
-  const [loading, setLoading] = useState(true)
-  const [locationModalVisible, setLocationModalVisible] = useState(false)
-  const [newLocation, setNewLocation] = useState("")
-  const [isSaving, setIsSaving] = useState(false)
-  const [languageModalVisible, setLanguageModalVisible] = useState(false)
-  const [selectedLanguage, setSelectedLanguage] = useState("English")
-  const [exporting, setExporting] = useState(false)
+  const router = useRouter();
+  const { user, signOut } = useAuth();
+  const [profile, setProfile] = useState<any>(null);
+  const [stats, setStats] = useState({ totalEarnings: 0, totalCollections: 0 });
+  const [loading, setLoading] = useState(true);
+  const [locationModalVisible, setLocationModalVisible] = useState(false);
+  const [newLocation, setNewLocation] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [languageModalVisible, setLanguageModalVisible] = useState(false);
+  const [selectedLanguage, setSelectedLanguage] = useState("English");
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     if (user?.id) {
-      loadProfileData()
-      loadLanguagePreference()
+      loadProfileData();
+      loadLanguagePreference();
     }
-  }, [user?.id])
+  }, [user?.id]);
 
   const loadProfileData = async () => {
     try {
-      setLoading(true)
-      const userProfile = await getUserProfile(user!.id)
-      const userStats = await getUserStats(user!.id)
+      setLoading(true);
+      const userProfile = await getUserProfile(user!.id);
+      const userStats = await getUserStats(user!.id);
 
-      setProfile(userProfile)
-      setStats(userStats)
-      setNewLocation(userProfile?.location || "")
+      setProfile(userProfile);
+      setStats(userStats);
+      setNewLocation(userProfile?.location || "");
     } catch (error) {
-      console.log("[v0] Error loading profile:", error)
+      console.log("[v0] Error loading profile:", error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const loadLanguagePreference = async () => {
     try {
-      const lang = await getLanguagePreference(user!.id)
-      setSelectedLanguage(lang)
+      const lang = await getLanguagePreference(user!.id);
+      setSelectedLanguage(lang);
     } catch (error) {
-      console.log("[v0] Error loading language preference:", error)
+      console.log("[v0] Error loading language preference:", error);
     }
-  }
+  };
 
   const handleSaveLocation = async () => {
     if (!newLocation.trim()) {
-      Alert.alert("Error", "Please enter a location")
-      return
+      Alert.alert("Error", "Please enter a location");
+      return;
     }
 
     try {
-      setIsSaving(true)
-      await updateUserLocation(user!.id, newLocation)
-      setProfile({ ...profile, location: newLocation })
-      setLocationModalVisible(false)
-      Alert.alert("Success", "Location updated successfully")
+      setIsSaving(true);
+      await updateUserLocation(user!.id, newLocation);
+      setProfile({ ...profile, location: newLocation });
+      setLocationModalVisible(false);
+      Alert.alert("Success", "Location updated successfully");
     } catch (error) {
-      console.log("[v0] Error updating location:", error)
-      Alert.alert("Error", "Failed to update location")
+      console.log("[v0] Error updating location:", error);
+      Alert.alert("Error", "Failed to update location");
     } finally {
-      setIsSaving(false)
+      setIsSaving(false);
     }
-  }
+  };
 
   const handleDataExport = async () => {
     try {
-      setExporting(true)
-      const exportData = await exportUserData(user!.id)
+      setExporting(true);
+      const exportData = await exportUserData(user!.id);
 
       // Share CSV content directly using native share
       await Share.share({
         message: exportData.content,
         title: "Kabadi Hisaab Export",
         url: undefined,
-      })
+      });
 
-      console.log("[v0] Export data shared successfully")
-      Alert.alert("Success", "Your waste collection data has been exported!")
+      console.log("[v0] Export data shared successfully");
+      Alert.alert("Success", "Your waste collection data has been exported!");
     } catch (error) {
-      console.log("[v0] Error exporting data:", error)
-      Alert.alert("Export Error", "Failed to export data. Please try again.")
+      console.log("[v0] Error exporting data:", error);
+      Alert.alert("Export Error", "Failed to export data. Please try again.");
     } finally {
-      setExporting(false)
+      setExporting(false);
     }
-  }
+  };
 
-  const handleLanguageChange = async (language: "Hindi" | "English" | "Hinglish") => {
+  const handleLanguageChange = async (
+    language: "Hindi" | "English" | "Hinglish",
+  ) => {
     try {
-      await updateLanguagePreference(user!.id, language)
-      setSelectedLanguage(language)
-      setLanguageModalVisible(false)
-      Alert.alert("Success", `Language changed to ${language}`)
+      await updateLanguagePreference(user!.id, language);
+      setSelectedLanguage(language);
+      setLanguageModalVisible(false);
+      Alert.alert("Success", `Language changed to ${language}`);
     } catch (error) {
-      console.log("[v0] Error updating language:", error)
-      Alert.alert("Error", "Failed to update language")
+      console.log("[v0] Error updating language:", error);
+      Alert.alert("Error", "Failed to update language");
     }
-  }
+  };
 
   const handleSupportContact = async () => {
-    const supportEmail = "swatiduck13@gmail.com"
-    const supportPhone = "7208282243"
-    const subject = "Kabadi App Support"
-    const body = `Hello Swati,\n\nI need help with the Kabadi App.\n\nUser: ${profile?.name}\nPhone: ${profile?.phone}`
+    const supportEmail = "swatiduck13@gmail.com";
+    const supportPhone = "7208282243";
+    const subject = "Kabadi App Support";
+    const body = `Hello Swati,\n\nI need help with the Kabadi App.\n\nUser: ${profile?.name}\nPhone: ${profile?.phone}`;
 
-    const mailtoUrl = `mailto:${supportEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+    const mailtoUrl = `mailto:${supportEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 
     try {
-      await Linking.openURL(mailtoUrl)
+      await Linking.openURL(mailtoUrl);
     } catch (error) {
       // Fallback to WhatsApp if email fails
       const whatsappUrl = `https://wa.me/${supportPhone}?text=${encodeURIComponent(
         `Hi Swati, I need support for the Kabadi App.\n\nMy name: ${profile?.name}`,
-      )}`
+      )}`;
       try {
-        await Linking.openURL(whatsappUrl)
+        await Linking.openURL(whatsappUrl);
       } catch (whatsappError) {
-        alert("Please contact: swatiduck13@gmail.com or +91 7208282243")
+        alert("Please contact: swatiduck13@gmail.com ");
       }
     }
-  }
+  };
 
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <ActivityIndicator size="large" color="#2E7D32" style={{ marginTop: 50 }} />
+        <ActivityIndicator
+          size="large"
+          color="#2E7D32"
+          style={{ marginTop: 50 }}
+        />
       </SafeAreaView>
-    )
+    );
   }
 
   return (
@@ -171,19 +176,28 @@ export default function ProfileScreen() {
         <View style={styles.profileInfo}>
           <View style={styles.avatarContainer}>
             <View style={styles.avatar}>
-              <Text style={styles.avatarText}>{profile?.name?.[0]?.toUpperCase() || "K"}</Text>
+              <Text style={styles.avatarText}>
+                {profile?.name?.[0]?.toUpperCase() || "K"}
+              </Text>
             </View>
           </View>
           <Text style={styles.name}>{profile?.name || "Kabadiwala"}</Text>
           <View style={styles.badgeContainer}>
             <Text style={styles.checkIcon}>✅</Text>
-            <Text style={styles.badgeText}>{profile?.verified ? "Verified Kabadiwala" : "Unverified"}</Text>
+            <Text style={styles.badgeText}>
+              {profile?.verified ? "Verified Kabadiwala" : "Unverified"}
+            </Text>
           </View>
           <Text style={styles.phone}>{profile?.phone || "+91 XXXXXXXXXX"}</Text>
 
-          <TouchableOpacity style={styles.locationContainer} onPress={() => setLocationModalVisible(true)}>
+          <TouchableOpacity
+            style={styles.locationContainer}
+            onPress={() => setLocationModalVisible(true)}
+          >
             <Text style={styles.locationIcon}>📍</Text>
-            <Text style={styles.locationText}>{profile?.location || "Add location"}</Text>
+            <Text style={styles.locationText}>
+              {profile?.location || "Add location"}
+            </Text>
             <Text style={styles.editLocationIcon}>✏️</Text>
           </TouchableOpacity>
         </View>
@@ -195,7 +209,9 @@ export default function ProfileScreen() {
           </View>
           <View style={styles.divider} />
           <View style={styles.statBox}>
-            <Text style={[styles.statNum, { color: "#FBC02D" }]}>₹{(stats.totalEarnings / 1000).toFixed(1)}k</Text>
+            <Text style={[styles.statNum, { color: "#FBC02D" }]}>
+              ₹{(stats.totalEarnings / 1000).toFixed(1)}k
+            </Text>
             <Text style={styles.statLabel}>Earnings</Text>
           </View>
         </View>
@@ -222,7 +238,6 @@ export default function ProfileScreen() {
             sub={`Current: ${selectedLanguage}`}
             onPress={() => setLanguageModalVisible(true)}
           />
-          <SettingItem icon="🔗" title="App share karein" sub="Doston ke saath" />
           <SettingItem
             icon="🎧"
             title="Madad chahiye?"
@@ -234,10 +249,10 @@ export default function ProfileScreen() {
             style={styles.logoutButton}
             onPress={async () => {
               try {
-                await signOut()
-                router.replace("/(auth)/login")
+                await signOut();
+                router.replace("/(auth)/login");
               } catch (error) {
-                console.log("[v0] Error logging out:", error)
+                console.log("[v0] Error logging out:", error);
               }
             }}
           >
@@ -274,7 +289,9 @@ export default function ProfileScreen() {
               onPress={handleSaveLocation}
               disabled={isSaving}
             >
-              <Text style={styles.saveButtonText}>{isSaving ? "Saving..." : "Save Location"}</Text>
+              <Text style={styles.saveButtonText}>
+                {isSaving ? "Saving..." : "Save Location"}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -298,25 +315,46 @@ export default function ProfileScreen() {
             {["English", "Hindi", "Hinglish"].map((lang) => (
               <TouchableOpacity
                 key={lang}
-                style={[styles.languageOption, selectedLanguage === lang && styles.languageOptionSelected]}
-                onPress={() => handleLanguageChange(lang as "Hindi" | "English" | "Hinglish")}
+                style={[
+                  styles.languageOption,
+                  selectedLanguage === lang && styles.languageOptionSelected,
+                ]}
+                onPress={() =>
+                  handleLanguageChange(lang as "Hindi" | "English" | "Hinglish")
+                }
               >
                 <Text
-                  style={[styles.languageOptionText, selectedLanguage === lang && styles.languageOptionTextSelected]}
+                  style={[
+                    styles.languageOptionText,
+                    selectedLanguage === lang &&
+                      styles.languageOptionTextSelected,
+                  ]}
                 >
-                  {lang === "English" ? "🇬🇧 English" : lang === "Hindi" ? "🇮🇳 हिंदी (Hindi)" : "🔤 Hinglish"}
+                  {lang === "English"
+                    ? "🇬🇧 English"
+                    : lang === "Hindi"
+                      ? "🇮🇳 हिंदी (Hindi)"
+                      : "🔤 Hinglish"}
                 </Text>
-                {selectedLanguage === lang && <Text style={styles.checkMark}>✓</Text>}
+                {selectedLanguage === lang && (
+                  <Text style={styles.checkMark}>✓</Text>
+                )}
               </TouchableOpacity>
             ))}
           </View>
         </View>
       </Modal>
     </SafeAreaView>
-  )
+  );
 }
 
-function SettingItem({ icon, title, sub, onPress, disabled = false }: {
+function SettingItem({
+  icon,
+  title,
+  sub,
+  onPress,
+  disabled = false,
+}: {
   icon: string;
   title: string;
   sub: string;
@@ -324,7 +362,11 @@ function SettingItem({ icon, title, sub, onPress, disabled = false }: {
   disabled?: boolean;
 }) {
   return (
-    <TouchableOpacity style={[styles.settingItem, disabled && { opacity: 0.6 }]} onPress={onPress} disabled={disabled}>
+    <TouchableOpacity
+      style={[styles.settingItem, disabled && { opacity: 0.6 }]}
+      onPress={onPress}
+      disabled={disabled}
+    >
       <View style={styles.itemLeft}>
         <View style={styles.settingIconBox}>
           <Text style={styles.settingIcon}>{icon}</Text>
@@ -336,12 +378,17 @@ function SettingItem({ icon, title, sub, onPress, disabled = false }: {
       </View>
       <Text style={styles.arrowIcon}>›</Text>
     </TouchableOpacity>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "white" },
-  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 20 },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 20,
+  },
   headerTitle: { fontSize: 18, fontWeight: "700" },
   backIcon: { fontSize: 24 },
   profileInfo: { alignItems: "center", paddingVertical: 24 },
@@ -387,8 +434,19 @@ const styles = StyleSheet.create({
   statLabel: { fontSize: 12, color: "#888", marginTop: 4 },
   divider: { width: 1, height: "100%", backgroundColor: "#E0E0E0" },
   settingsSection: { padding: 20 },
-  sectionHeader: { fontSize: 12, fontWeight: "800", color: "#999", letterSpacing: 1, marginBottom: 16 },
-  settingItem: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 20 },
+  sectionHeader: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: "#999",
+    letterSpacing: 1,
+    marginBottom: 16,
+  },
+  settingItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
+  },
   itemLeft: { flexDirection: "row", alignItems: "center" },
   settingIconBox: {
     width: 48,
@@ -473,4 +531,4 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: "#2E7D32",
   },
-})
+});

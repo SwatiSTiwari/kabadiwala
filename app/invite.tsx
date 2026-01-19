@@ -1,9 +1,61 @@
-"use client"
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Image } from "react-native"
-import { useRouter } from "expo-router"
+"use client";
+import * as Clipboard from "expo-clipboard";
+import { useRouter } from "expo-router";
+import { useState } from "react";
+import {
+  Alert,
+  Image,
+  Linking,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 export default function InviteScreen() {
-  const router = useRouter()
+  const router = useRouter();
+  const [copied, setCopied] = useState(false);
+
+  // Update this with your actual app URL (Play Store, App Store, or custom domain)
+  const APP_URL = "https://kabadihisaab.app"; // or your actual app link
+  const APP_NAME = "Kabadi Hisaab";
+
+  const handleCopyLink = async () => {
+    try {
+      await Clipboard.setStringAsync(APP_URL);
+      setCopied(true);
+      Alert.alert("Link Copied!", "App link clipboard mein copy ho gaya hai");
+      setTimeout(() => setCopied(false), 3000);
+    } catch (error) {
+      Alert.alert("Error", "Link copy nahi ho saka");
+    }
+  };
+
+  const handleWhatsAppShare = async () => {
+    try {
+      const message = `🗑️ *${APP_NAME} - Digital Kabadi Hisaab*\n\nApne kabadi ka hisaab ab digital rakho!\n\n✅ Roz ka hisaab\n✅ Total earnings\n✅ Excel export\n\nApp download karein:\n${APP_URL}`;
+
+      const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+      const canOpen = await Linking.canOpenURL(whatsappUrl);
+
+      if (canOpen) {
+        await Linking.openURL(whatsappUrl);
+      } else {
+        Alert.alert("WhatsApp not found", "WhatsApp app install karein");
+      }
+    } catch (error) {
+      Alert.alert("Error", "WhatsApp nahi khul saka");
+    }
+  };
+
+  const handleDownloadQR = () => {
+    Alert.alert(
+      "Download QR Code",
+      "QR code ko screenshot le kar save kar sakte hain, ya WhatsApp se share karein",
+      [{ text: "OK" }],
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -17,63 +69,92 @@ export default function InviteScreen() {
 
       <View style={styles.content}>
         <Text style={styles.title}>Naye Kabadiwala ko Jodein</Text>
-        <Text style={styles.subtitle}>Is QR code ko scan karwayein taaki naya saathi aapke network mein jud sake.</Text>
+        <Text style={styles.subtitle}>
+          Is QR code ko scan karwayein taaki naya saathi aapke network mein jud
+          sake.
+        </Text>
 
         <View style={styles.qrCard}>
           <Text style={styles.cardHeader}>INVITE CODE</Text>
           <View style={styles.qrContainer}>
             <View style={styles.qrFrame}>
               <Image
-                source={{ uri: "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=KB-8832" }}
+                source={{
+                  uri: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(APP_URL)}`,
+                }}
                 style={styles.qrImage}
               />
             </View>
           </View>
-          <Text style={styles.invitationIdLabel}>Invitation ID</Text>
+          <Text style={styles.invitationIdLabel}>App Download Link</Text>
           <View style={styles.idBox}>
-            <Text style={styles.idText}>KB - 8832</Text>
-            <TouchableOpacity>
-              <Text>📋</Text>
+            <Text style={styles.idText} numberOfLines={1}>
+              {APP_URL}
+            </Text>
+            <TouchableOpacity onPress={handleCopyLink}>
+              <Text>{copied ? "✅" : "📋"}</Text>
             </TouchableOpacity>
           </View>
         </View>
 
         <View style={styles.shareSection}>
           <Text style={styles.shareTitle}>Ya link share karein:</Text>
-          <TouchableOpacity style={styles.whatsappBtn}>
+          <TouchableOpacity
+            style={styles.whatsappBtn}
+            onPress={handleWhatsAppShare}
+          >
             <Text style={styles.whatsappIcon}>💬</Text>
             <Text style={styles.whatsappText}>WhatsApp pe Link Bhejein</Text>
           </TouchableOpacity>
 
           <View style={styles.secondaryActions}>
-            <TouchableOpacity style={styles.actionBtn}>
-              <Text>📥 Save Image</Text>
+            <TouchableOpacity
+              style={styles.actionBtn}
+              onPress={handleDownloadQR}
+            >
+              <Text>📥 Save QR</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.actionBtn}>
-              <Text>🔗 Copy Link</Text>
+            <TouchableOpacity style={styles.actionBtn} onPress={handleCopyLink}>
+              <Text>{copied ? "✅ Copied!" : "🔗 Copy Link"}</Text>
             </TouchableOpacity>
           </View>
         </View>
 
         <View style={styles.footer}>
-          <Text style={styles.footerText}>Camera kaam nahi kar raha?</Text>
-          <TouchableOpacity>
-            <Text style={styles.footerLink}>::: Number se jodein</Text>
+          <Text style={styles.footerText}>Kisi ka QR code scan karna hai?</Text>
+          <TouchableOpacity onPress={() => router.push("/scan-qr")}>
+            <Text style={styles.footerLink}>📷 QR Scan Karein</Text>
           </TouchableOpacity>
         </View>
       </View>
     </SafeAreaView>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "white" },
-  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 20 },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 20,
+  },
   headerTitle: { fontSize: 18, fontWeight: "700" },
   backIcon: { fontSize: 24 },
-  content: { padding: 24, alignItems: "center" },
-  title: { fontSize: 24, fontWeight: "800", textAlign: "center", color: "#1A1A1A" },
-  subtitle: { fontSize: 14, color: "#666", textAlign: "center", marginTop: 12, lineHeight: 20 },
+  content: { padding: 24, flex: 1 },
+  title: {
+    fontSize: 24,
+    fontWeight: "800",
+    textAlign: "center",
+    color: "#1A1A1A",
+  },
+  subtitle: {
+    fontSize: 14,
+    color: "#666",
+    textAlign: "center",
+    marginTop: 12,
+    lineHeight: 20,
+  },
   qrCard: {
     width: "100%",
     backgroundColor: "#FAFAFA",
@@ -84,7 +165,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#F0F0F0",
   },
-  cardHeader: { fontSize: 12, fontWeight: "800", color: "#FBC02D", letterSpacing: 1, marginBottom: 24 },
+  cardHeader: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: "#FBC02D",
+    letterSpacing: 1,
+    marginBottom: 24,
+  },
   qrContainer: {
     width: 220,
     height: 220,
@@ -109,7 +196,13 @@ const styles = StyleSheet.create({
   },
   idText: { fontSize: 18, fontWeight: "700", marginRight: 12 },
   shareSection: { width: "100%", marginTop: 32 },
-  shareTitle: { fontSize: 14, fontWeight: "700", color: "#1A1A1A", textAlign: "center", marginBottom: 16 },
+  shareTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#1A1A1A",
+    textAlign: "center",
+    marginBottom: 16,
+  },
   whatsappBtn: {
     backgroundColor: "#25D366",
     flexDirection: "row",
@@ -135,4 +228,4 @@ const styles = StyleSheet.create({
   footer: { marginTop: 40, alignItems: "center" },
   footerText: { color: "#999", fontSize: 13 },
   footerLink: { color: "#FBC02D", fontWeight: "700", marginTop: 8 },
-})
+});
