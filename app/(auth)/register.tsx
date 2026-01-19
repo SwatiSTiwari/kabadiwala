@@ -1,9 +1,10 @@
-"use client"
+"use client";
 
-import { useAuth } from "@/lib/auth-context"
-import { useRouter } from "expo-router"
-import { StatusBar } from "expo-status-bar"
-import { useState } from "react"
+import { useAuth } from "@/lib/auth-context";
+import { FontAwesome } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import { useState } from "react";
 import {
   Alert,
   Dimensions,
@@ -15,76 +16,74 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View
-} from "react-native"
+  View,
+} from "react-native";
 
-
-const { height } = Dimensions.get("window")
+const { height } = Dimensions.get("window");
 
 export default function RegisterScreen() {
-  const router = useRouter()
-  const { signUp } = useAuth()
-  const [name, setName] = useState("")
-  const [phone, setPhone] = useState("")
-  const [password, setPassword] = useState("")
-  const [confirmPassword, setConfirmPassword] = useState("")
-  const [loading, setLoading] = useState(false)
+  const router = useRouter();
+  const { signUp } = useAuth();
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleRegister = async () => {
     if (!name || !phone || !password || !confirmPassword) {
-      Alert.alert("Error", "Please fill all fields")
-      return
+      Alert.alert("Error", "Sabhi fields bharni hain");
+      return;
     }
 
     if (password.length < 6) {
-      Alert.alert("Error", "Password must be at least 6 characters")
-      return
+      Alert.alert("Error", "Password kam se kam 6 characters ka hona chahiye");
+      return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert("Error", "Passwords do not match")
-      return
+      Alert.alert("Error", "Passwords match nahi karte");
+      return;
     }
 
-    setLoading(true)
+    setLoading(true);
     try {
-      console.log('Starting registration...')
-      await signUp(phone, password, name)
-      Alert.alert(
-        "Success", 
-        "Account created! Please login",
-        [{ text: "OK", onPress: () => router.replace("./login") }]
-      )
+      console.log("Starting registration...");
+      await signUp(phone, password, name);
+      Alert.alert("Success", "Account ban gaya! Ab login karein", [
+        { text: "OK", onPress: () => router.replace("./login") },
+      ]);
     } catch (error) {
-      console.error('Registration error:', error)
-      const errorMessage = error instanceof Error ? error.message : "Please try again"
-      Alert.alert("Registration Failed", errorMessage)
+      console.error("Registration error:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Please try again";
+      Alert.alert("Registration Nahi Hua", errorMessage);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar style="dark" />
-      <KeyboardAvoidingView 
+      <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
       >
-        <ScrollView 
+        <ScrollView
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()}>
-            <Text style={styles.backButton}>←</Text>
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Naya Account</Text>
-          <View style={{ width: 30 }} />
-        </View>
+          <View style={styles.header}>
+            <TouchableOpacity onPress={() => router.back()}>
+              <Text style={styles.backButton}>←</Text>
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Naya Account</Text>
+            <View style={{ width: 30 }} />
+          </View>
 
-        {/* <View style={styles.heroContainer}>
+          {/* <View style={styles.heroContainer}>
           <Image
             source={Logo}
             style={styles.heroImage}
@@ -92,94 +91,108 @@ export default function RegisterScreen() {
           />
         </View> */}
 
-        <View style={styles.content}>
-          <Text style={styles.mainTitle}>Swagat hai!</Text>
-          <Text style={styles.highlight}>Nayi shuruat karein</Text>
-          <Text style={styles.subtitle}>Apna hisaab digital karein aur business badhayein.</Text>
+          <View style={styles.content}>
+            <Text style={styles.mainTitle}>Swagat hai!</Text>
+            <Text style={styles.highlight}>Nayi shuruat karein</Text>
+            <Text style={styles.subtitle}>
+              Apna hisaab digital karein aur business badhayein.
+            </Text>
 
-          <View style={styles.formSection}>
-            <Text style={styles.label}>Pura Naam</Text>
-            <View style={styles.inputWrapper}>
-              <Text style={styles.inputIcon}>👤</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Rahul Kumar"
-                placeholderTextColor="#BBB"
-                value={name}
-                onChangeText={setName}
-                editable={!loading}
-              />
+            <View style={styles.formSection}>
+              <Text style={styles.label}>Pura Naam</Text>
+              <View style={styles.inputWrapper}>
+                <FontAwesome
+                  name="user"
+                  size={20}
+                  color="#999"
+                  style={{ marginRight: 12 }}
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Rahul Kumar"
+                  placeholderTextColor="#BBB"
+                  value={name}
+                  onChangeText={setName}
+                  editable={!loading}
+                />
+              </View>
             </View>
-          </View>
 
-          <View style={styles.formSection}>
-            <Text style={styles.label}>Mobile Number</Text>
-            <View style={styles.inputWrapper}>
-              <Text style={styles.inputIcon}>📱</Text>
-              <Text style={styles.countryCode}>+91</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="98765 43210"
-                placeholderTextColor="#BBB"
-                keyboardType="phone-pad"
-                value={phone}
-                onChangeText={setPhone}
-                editable={!loading}
-              />
+            <View style={styles.formSection}>
+              <Text style={styles.label}>Mobile Number</Text>
+              <View style={styles.inputWrapper}>
+                <FontAwesome
+                  name="phone"
+                  size={20}
+                  color="#999"
+                  style={{ marginRight: 12 }}
+                />
+                <Text style={styles.countryCode}>+91</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="98765 43210"
+                  placeholderTextColor="#BBB"
+                  keyboardType="phone-pad"
+                  value={phone}
+                  onChangeText={setPhone}
+                  editable={!loading}
+                />
+              </View>
+              <Text style={styles.hint}>Isi number par OTP aayega</Text>
             </View>
-            <Text style={styles.hint}>Isi number par OTP aayega</Text>
-          </View>
 
-          <View style={styles.formSection}>
-            <Text style={styles.label}>Password</Text>
-            <View style={styles.inputWrapper}>
-              <TextInput
-                style={styles.input}
-                placeholder="Secure password banayein"
-                placeholderTextColor="#BBB"
-                secureTextEntry
-                value={password}
-                onChangeText={setPassword}
-                editable={!loading}
-              />
+            <View style={styles.formSection}>
+              <Text style={styles.label}>Password</Text>
+              <View style={styles.inputWrapper}>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Secure password banayein"
+                  placeholderTextColor="#BBB"
+                  secureTextEntry
+                  value={password}
+                  onChangeText={setPassword}
+                  editable={!loading}
+                />
+              </View>
             </View>
-          </View>
 
-          <View style={styles.formSection}>
-            <Text style={styles.label}>Confirm Password</Text>
-            <View style={styles.inputWrapper}>
-              <TextInput
-                style={styles.input}
-                placeholder="Password dubara darein"
-                placeholderTextColor="#BBB"
-                secureTextEntry
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-                editable={!loading}
-              />
+            <View style={styles.formSection}>
+              <Text style={styles.label}>Confirm Password</Text>
+              <View style={styles.inputWrapper}>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Password dubara darein"
+                  placeholderTextColor="#BBB"
+                  secureTextEntry
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  editable={!loading}
+                />
+              </View>
             </View>
-          </View>
 
-          <TouchableOpacity
-            style={[styles.registerButton, loading && { opacity: 0.6 }]}
-            onPress={handleRegister}
-            disabled={loading}
-          >
-            <Text style={styles.buttonText}>{loading ? "Creating..." : "Register Karein"}</Text>
-            <Text style={styles.buttonIcon}>→</Text>
-          </TouchableOpacity>
-
-          <View style={styles.loginLink}>
-            <Text style={styles.loginText}>Account pehle se hai? </Text>
-            <TouchableOpacity onPress={() => router.replace("./login")}>
-              <Text style={styles.loginLinkText}>Login karein</Text>
+            <TouchableOpacity
+              style={[styles.registerButton, loading && { opacity: 0.6 }]}
+              onPress={handleRegister}
+              disabled={loading}
+            >
+              <Text style={styles.buttonText}>
+                {loading ? "Creating..." : "Register Karein"}
+              </Text>
+              <Text style={styles.buttonIcon}>→</Text>
             </TouchableOpacity>
+
+            <View style={styles.loginLink}>
+              <Text style={styles.loginText}>Account pehle se hai? </Text>
+              <TouchableOpacity onPress={() => router.replace("./login")}>
+                <Text style={styles.loginLinkText}>Login karein</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
@@ -311,4 +324,4 @@ const styles = StyleSheet.create({
     color: "#FFD600",
     fontWeight: "600",
   },
-})
+});

@@ -21,7 +21,7 @@ import {
 import Logo from "../../assets/images/logo.png"
 
 
-const { width, height } = Dimensions.get("window")
+const { height } = Dimensions.get("window")
 
 
 export default function LoginScreen() {
@@ -46,7 +46,7 @@ export default function LoginScreen() {
     } catch (error) {
       console.error('Login error:', error)
       const errorMessage = error instanceof Error ? error.message : "Please try again"
-      Alert.alert("Login Failed", errorMessage)
+      Alert.alert("Login Nahi Hua", errorMessage)
     } finally {
       setLoading(false)
     }
@@ -129,7 +129,7 @@ export default function LoginScreen() {
             <Text style={styles.infoText}>🔒 Hum aapka number safe rakhenge.</Text>
           </View>
           <TouchableOpacity onPress={() => router.push("/register")}>
-            <Text style={styles.helpText}>✨ Naya account banayein?</Text>
+            <Text style={styles.helpText}>Naya account banayein?</Text>
           </TouchableOpacity>
         </View>
           </View>

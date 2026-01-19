@@ -1,26 +1,25 @@
 "use client";
-import {
-  View,
-  Text,
-  Image,
-  TouchableOpacity,
-  ScrollView,
-  ActivityIndicator,
-  StyleSheet,
-  SafeAreaView,
-} from "react-native";
+import { FontAwesome } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Image,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import Profile from "../../assets/images/profile.png";
 import { useAuth } from "../../lib/auth-context";
 import {
-  getTodayEarnings,
-  getWeeklyHisaab,
-  getUserProfile,
   getEntriesGroupedByDate,
+  getTodayEarnings,
+  getUserProfile,
+  getWeeklyHisaab,
 } from "../../lib/supabase-queries";
-import { useEffect, useState } from "react";
-import Profile from "../../assets/images/profile.png"
-import profile from "./profile";
-
 
 const TRANSACTIONS = [
   {
@@ -89,22 +88,22 @@ export default function HomeScreen() {
       }
       setRecentTransactions(recentEntries.slice(0, 3));
     } catch (error) {
-      console.log("[v0] Error loading home data:", error);
+      console.log("Error loading home data:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  const getWasteIcon = (wasteType: string) => {
-    const icons: Record<string, string> = {
-      "Raddi (Paper)": "📰",
-      "Loha (Iron)": "🔨",
-      "Plastic (Mixed)": "♻️",
-      Plastic: "♻️",
-      Iron: "🔨",
-      Paper: "📰",
+  const getWasteIcon = (wasteType: string): { name: string; color: string } => {
+    const icons: Record<string, { name: string; color: string }> = {
+      "Raddi (Paper)": { name: "file-text-o", color: "#8D6E63" },
+      "Loha (Iron)": { name: "wrench", color: "#607D8B" },
+      "Plastic (Mixed)": { name: "recycle", color: "#4CAF50" },
+      Plastic: { name: "recycle", color: "#4CAF50" },
+      Iron: { name: "wrench", color: "#607D8B" },
+      Paper: { name: "file-text-o", color: "#8D6E63" },
     };
-    return icons[wasteType] || "📦";
+    return icons[wasteType] || { name: "cube", color: "#666" };
   };
 
   if (loading) {
@@ -124,27 +123,34 @@ export default function HomeScreen() {
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <View>
-            <Text style={styles.greeting}>
-              Namaste,{"\n"}
-              {userName} 👋
-            </Text>
+            <View
+              style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
+            >
+              <Text style={styles.greeting}>
+                Namaste,{"\n"}
+                {userName}
+              </Text>
+              <FontAwesome name="hand-peace-o" size={24} color="#FBC02D" />
+            </View>
             <Text style={styles.subGreeting}>Aaj ka din shubh ho!</Text>
           </View>
-          <Image
-            source={Profile}
-            style={styles.avatar}
-          />
+          <Image source={Profile} style={styles.avatar} />
         </View>
 
         <View style={styles.statsContainer}>
           <View style={[styles.statCard, { backgroundColor: "#2E7D32" }]}>
             <View style={styles.statHeader}>
               <Text style={styles.statLabel}>AAJ KI KAMAAI</Text>
-              <Text style={styles.statIcon}>💵</Text>
+              <FontAwesome name="money" size={20} color="white" />
             </View>
             <Text style={styles.statValue}>₹ {todayEarning}</Text>
             <View style={styles.statFooter}>
-              <Text style={styles.trendIcon}>📈</Text>
+              <FontAwesome
+                name="line-chart"
+                size={14}
+                color="white"
+                style={{ marginRight: 6 }}
+              />
               <Text style={styles.trendText}>Kal se 12% zyada</Text>
             </View>
           </View>
@@ -154,7 +160,7 @@ export default function HomeScreen() {
               <Text style={[styles.statLabel, { color: "#827717" }]}>
                 IS HAFTE KA HISAAB
               </Text>
-              <Text style={styles.statIcon}>📅</Text>
+              <FontAwesome name="calendar" size={20} color="#827717" />
             </View>
             <Text style={[styles.statValue, { color: "#333" }]}>
               ₹ {weeklyEarning}
@@ -180,30 +186,35 @@ export default function HomeScreen() {
             </TouchableOpacity>
           </View>
 
-          {recentTransactions.map((item, index) => (
-            <View key={index} style={styles.transactionItem}>
-              <View style={styles.itemIconContainer}>
-                <Text style={styles.itemIcon}>
-                  {getWasteIcon(item.waste_type)}
-                </Text>
+          {recentTransactions.map((item, index) => {
+            const iconInfo = getWasteIcon(item.waste_type);
+            return (
+              <View key={index} style={styles.transactionItem}>
+                <View style={styles.itemIconContainer}>
+                  <FontAwesome
+                    name={iconInfo.name as any}
+                    size={24}
+                    color={iconInfo.color}
+                  />
+                </View>
+                <View style={styles.itemDetails}>
+                  <Text style={styles.itemTitle}>{item.waste_type}</Text>
+                  <Text style={styles.itemSub}>
+                    {item.weight} kg • ₹{item.rate_per_kg}/kg
+                  </Text>
+                </View>
+                <View style={styles.itemAmountContainer}>
+                  <Text style={styles.itemAmount}>₹{item.total_earning}</Text>
+                  <Text style={styles.itemTime}>
+                    {new Date(item.created_at).toLocaleTimeString("en-US", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </Text>
+                </View>
               </View>
-              <View style={styles.itemDetails}>
-                <Text style={styles.itemTitle}>{item.waste_type}</Text>
-                <Text style={styles.itemSub}>
-                  {item.weight} kg • ₹{item.rate_per_kg}/kg
-                </Text>
-              </View>
-              <View style={styles.itemAmountContainer}>
-                <Text style={styles.itemAmount}>₹{item.total_earning}</Text>
-                <Text style={styles.itemTime}>
-                  {new Date(item.created_at).toLocaleTimeString("en-US", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </Text>
-              </View>
-            </View>
-          ))}
+            );
+          })}
         </View>
       </ScrollView>
       {/* Bottom nav removed - now handled by (tabs)/_layout.tsx */}

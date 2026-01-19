@@ -1,5 +1,5 @@
-import { Tabs } from "expo-router"
-import { Text } from "react-native"
+import { FontAwesome } from "@expo/vector-icons";
+import { Tabs } from "expo-router";
 
 export default function TabLayout() {
   return (
@@ -25,23 +25,29 @@ export default function TabLayout() {
         name="home"
         options={{
           title: "Home",
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: 24, color }}>🏠</Text>,
+          tabBarIcon: ({ color }) => (
+            <FontAwesome name="home" size={24} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="history"
         options={{
           title: "Hisaab",
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: 24, color }}>📒</Text>,
+          tabBarIcon: ({ color }) => (
+            <FontAwesome name="book" size={24} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
           title: "Profile",
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: 24, color }}>👤</Text>,
+          tabBarIcon: ({ color }) => (
+            <FontAwesome name="user" size={24} color={color} />
+          ),
         }}
       />
     </Tabs>
-  )
+  );
 }

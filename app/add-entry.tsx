@@ -1,56 +1,78 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, TextInput, ScrollView, Alert } from "react-native"
-import { useRouter } from "expo-router"
-import { useAuth } from "@/lib/auth-context"
-import { addWasteEntry } from "@/lib/supabase-queries"
+import { useAuth } from "@/lib/auth-context";
+import { addWasteEntry } from "@/lib/supabase-queries";
+import { FontAwesome } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import { useState } from "react";
+import {
+    Alert,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+} from "react-native";
 
 const CATEGORIES = [
-  { id: "plastic", name: "Plastic", rate: "12", icon: "🧴" },
-  { id: "loha", name: "Loha", rate: "25", icon: "🌋" },
-  { id: "raddi", name: "Paper", rate: "8", icon: "📄" },
-  { id: "glass", name: "Glass", rate: "5", icon: "🥤" },
-  { id: "mixed", name: "Mixed", rate: "3", icon: "♻️" },
-]
+  { id: "plastic", name: "Plastic", rate: "12", icon: "recycle" },
+  { id: "loha", name: "Loha", rate: "25", icon: "industry" },
+  { id: "raddi", name: "Paper", rate: "8", icon: "file-text-o" },
+  { id: "glass", name: "Glass", rate: "5", icon: "glass" },
+  { id: "mixed", name: "Mixed", rate: "3", icon: "refresh" },
+];
 
 export default function AddEntryScreen() {
-  const router = useRouter()
-  const { user } = useAuth()
-  const [selectedCat, setSelectedCat] = useState("plastic")
-  const [weight, setWeight] = useState("0")
-  const [rate, setRate] = useState("12")
-  const [loading, setLoading] = useState(false)
+  const router = useRouter();
+  const { user } = useAuth();
+  const [selectedCat, setSelectedCat] = useState("plastic");
+  const [weight, setWeight] = useState("0");
+  const [rate, setRate] = useState("12");
+  const [loading, setLoading] = useState(false);
 
-  const total = Number.parseFloat(weight || "0") * Number.parseFloat(rate || "0")
+  const total =
+    Number.parseFloat(weight || "0") * Number.parseFloat(rate || "0");
 
   const handleSave = async () => {
     if (!user) {
-      Alert.alert("Error", "You must be logged in")
-      return
+      Alert.alert("Error", "You must be logged in");
+      return;
     }
 
     if (Number.parseFloat(weight) <= 0) {
-      Alert.alert("Error", "Weight must be greater than 0")
-      return
+      Alert.alert("Error", "Weight must be greater than 0");
+      return;
     }
 
-    setLoading(true)
+    setLoading(true);
     try {
-      await addWasteEntry(user.id, selectedCat, Number.parseFloat(weight), Number.parseFloat(rate))
-      Alert.alert("Success", "Entry saved!")
-      router.back()
+      await addWasteEntry(
+        user.id,
+        selectedCat,
+        Number.parseFloat(weight),
+        Number.parseFloat(rate),
+      );
+      Alert.alert("Success", "Entry saved!");
+      router.back();
     } catch (error) {
-      Alert.alert("Error", error instanceof Error ? error.message : "Failed to save entry")
+      Alert.alert(
+        "Error",
+        error instanceof Error ? error.message : "Failed to save entry",
+      );
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backButton}
+        >
           <Text style={styles.backIcon}>←</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Naya Entry Jodein</Text>
@@ -62,22 +84,48 @@ export default function AddEntryScreen() {
           {CATEGORIES.map((cat) => (
             <TouchableOpacity
               key={cat.id}
-              style={[styles.categoryCard, selectedCat === cat.id && styles.selectedCard]}
+              style={[
+                styles.categoryCard,
+                selectedCat === cat.id && styles.selectedCard,
+              ]}
               onPress={() => {
-                setSelectedCat(cat.id)
-                setRate(cat.rate)
+                setSelectedCat(cat.id);
+                setRate(cat.rate);
               }}
             >
-              <View style={[styles.categoryIconCircle, selectedCat === cat.id && styles.selectedIconCircle]}>
-                <Text style={styles.categoryIconText}>{cat.icon}</Text>
+              <View
+                style={[
+                  styles.categoryIconCircle,
+                  selectedCat === cat.id && styles.selectedIconCircle,
+                ]}
+              >
+                <FontAwesome
+                  name={cat.icon as any}
+                  size={28}
+                  color={selectedCat === cat.id ? "white" : "#666"}
+                />
                 {selectedCat === cat.id && (
                   <View style={styles.checkmark}>
-                    <Text style={styles.checkText}>✓</Text>
+                    <FontAwesome name="check" size={12} color="#2E7D32" />
                   </View>
                 )}
               </View>
-              <Text style={[styles.categoryName, selectedCat === cat.id && styles.selectedText]}>{cat.name}</Text>
-              <Text style={[styles.categoryRate, selectedCat === cat.id && styles.selectedText]}>₹{cat.rate}</Text>
+              <Text
+                style={[
+                  styles.categoryName,
+                  selectedCat === cat.id && styles.selectedText,
+                ]}
+              >
+                {cat.name}
+              </Text>
+              <Text
+                style={[
+                  styles.categoryRate,
+                  selectedCat === cat.id && styles.selectedText,
+                ]}
+              >
+                ₹{cat.rate}
+              </Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -127,12 +175,19 @@ export default function AddEntryScreen() {
           onPress={handleSave}
           disabled={loading}
         >
-          <Text style={styles.saveIcon}>💾</Text>
-          <Text style={styles.saveText}>{loading ? "Saving..." : "Save Karo"}</Text>
+          <FontAwesome
+            name="save"
+            size={20}
+            color="white"
+            style={{ marginRight: 8 }}
+          />
+          <Text style={styles.saveText}>
+            {loading ? "Saving..." : "Save Karo"}
+          </Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
@@ -317,4 +372,4 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "700",
   },
-})
+});

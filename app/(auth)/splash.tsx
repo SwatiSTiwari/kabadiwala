@@ -14,7 +14,7 @@ export default function SplashScreen() {
     if (!loading && user) {
       router.replace("/(tabs)/home")
     }
-  }, [loading, user])
+  }, [loading, router, user])
 
   const handleStart = () => {
     router.push("./register")

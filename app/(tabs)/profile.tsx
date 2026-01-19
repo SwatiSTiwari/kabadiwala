@@ -1,5 +1,6 @@
 "use client";
 
+import { FontAwesome } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
@@ -67,13 +68,13 @@ export default function ProfileScreen() {
       const lang = await getLanguagePreference(user!.id);
       setSelectedLanguage(lang);
     } catch (error) {
-      console.log("[v0] Error loading language preference:", error);
+      console.log("Error loading language preference:", error);
     }
   };
 
   const handleSaveLocation = async () => {
     if (!newLocation.trim()) {
-      Alert.alert("Error", "Please enter a location");
+      Alert.alert("Error", "Kripya karke location daalein");
       return;
     }
 
@@ -82,10 +83,10 @@ export default function ProfileScreen() {
       await updateUserLocation(user!.id, newLocation);
       setProfile({ ...profile, location: newLocation });
       setLocationModalVisible(false);
-      Alert.alert("Success", "Location updated successfully");
+      Alert.alert("Success", "Location update ho gaya hai");
     } catch (error) {
-      console.log("[v0] Error updating location:", error);
-      Alert.alert("Error", "Failed to update location");
+      console.log("Error updating location:", error);
+      Alert.alert("Error", "Location update nahi hua");
     } finally {
       setIsSaving(false);
     }
@@ -103,11 +104,11 @@ export default function ProfileScreen() {
         url: undefined,
       });
 
-      console.log("[v0] Export data shared successfully");
-      Alert.alert("Success", "Your waste collection data has been exported!");
+      console.log("Export data shared successfully");
+      Alert.alert("Success", "Data export ho gaya hai. Share sheet khul gaya hoga.");
     } catch (error) {
-      console.log("[v0] Error exporting data:", error);
-      Alert.alert("Export Error", "Failed to export data. Please try again.");
+      console.log("Error exporting data:", error);
+      Alert.alert("Export Error", "Data export nahi hua. Kripya dobara koshish karein.");
     } finally {
       setExporting(false);
     }
@@ -122,8 +123,8 @@ export default function ProfileScreen() {
       setLanguageModalVisible(false);
       Alert.alert("Success", `Language changed to ${language}`);
     } catch (error) {
-      console.log("[v0] Error updating language:", error);
-      Alert.alert("Error", "Failed to update language");
+      console.log("Error updating language:", error);
+      Alert.alert("Error", "Language update nahi hua");
     }
   };
 
@@ -183,7 +184,12 @@ export default function ProfileScreen() {
           </View>
           <Text style={styles.name}>{profile?.name || "Kabadiwala"}</Text>
           <View style={styles.badgeContainer}>
-            <Text style={styles.checkIcon}>✅</Text>
+            <FontAwesome
+              name="check-circle"
+              size={16}
+              color="#2E7D32"
+              style={{ marginRight: 6 }}
+            />
             <Text style={styles.badgeText}>
               {profile?.verified ? "Verified Kabadiwala" : "Unverified"}
             </Text>
@@ -194,11 +200,21 @@ export default function ProfileScreen() {
             style={styles.locationContainer}
             onPress={() => setLocationModalVisible(true)}
           >
-            <Text style={styles.locationIcon}>📍</Text>
+            <FontAwesome
+              name="map-marker"
+              size={14}
+              color="#2E7D32"
+              style={{ marginRight: 6 }}
+            />
             <Text style={styles.locationText}>
               {profile?.location || "Add location"}
             </Text>
-            <Text style={styles.editLocationIcon}>✏️</Text>
+            <FontAwesome
+              name="pencil"
+              size={12}
+              color="#2E7D32"
+              style={{ marginLeft: 6 }}
+            />
           </TouchableOpacity>
         </View>
 
@@ -220,26 +236,26 @@ export default function ProfileScreen() {
           <Text style={styles.sectionHeader}>SETTINGS</Text>
 
           <SettingItem
-            icon="💜"
+            icon="qrcode"
             title="Add Kabadiwala via QR"
             sub="Scan karke connect karein"
             onPress={() => router.push("/invite")}
           />
           <SettingItem
-            icon="📥"
+            icon="download"
             title="Data export karo"
             sub="Excel format mein download karein"
             onPress={handleDataExport}
             disabled={exporting}
           />
           <SettingItem
-            icon="🔤"
+            icon="language"
             title="Language badlo"
             sub={`Current: ${selectedLanguage}`}
             onPress={() => setLanguageModalVisible(true)}
           />
           <SettingItem
-            icon="🎧"
+            icon="headphones"
             title="Madad chahiye?"
             sub="Support team se baat karein"
             onPress={handleSupportContact}
@@ -252,11 +268,16 @@ export default function ProfileScreen() {
                 await signOut();
                 router.replace("/(auth)/login");
               } catch (error) {
-                console.log("[v0] Error logging out:", error);
+                console.log("Error logging out:", error);
               }
             }}
           >
-            <Text style={styles.logoutText}>🚪 Logout</Text>
+            <View
+              style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
+            >
+              <FontAwesome name="sign-out" size={16} color="#C62828" />
+              <Text style={styles.logoutText}>Logout</Text>
+            </View>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -272,7 +293,7 @@ export default function ProfileScreen() {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Edit Location</Text>
               <TouchableOpacity onPress={() => setLocationModalVisible(false)}>
-                <Text style={styles.closeIcon}>✕</Text>
+                <FontAwesome name="close" size={24} color="#999" />
               </TouchableOpacity>
             </View>
 
@@ -308,7 +329,7 @@ export default function ProfileScreen() {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Select Language</Text>
               <TouchableOpacity onPress={() => setLanguageModalVisible(false)}>
-                <Text style={styles.closeIcon}>✕</Text>
+                <FontAwesome name="close" size={24} color="#999" />
               </TouchableOpacity>
             </View>
 
@@ -337,7 +358,7 @@ export default function ProfileScreen() {
                       : "🔤 Hinglish"}
                 </Text>
                 {selectedLanguage === lang && (
-                  <Text style={styles.checkMark}>✓</Text>
+                  <FontAwesome name="check" size={20} color="#2E7D32" />
                 )}
               </TouchableOpacity>
             ))}
@@ -369,14 +390,14 @@ function SettingItem({
     >
       <View style={styles.itemLeft}>
         <View style={styles.settingIconBox}>
-          <Text style={styles.settingIcon}>{icon}</Text>
+          <FontAwesome name={icon as any} size={20} color="#666" />
         </View>
         <View>
           <Text style={styles.settingTitle}>{title}</Text>
           <Text style={styles.settingSub}>{sub}</Text>
         </View>
       </View>
-      <Text style={styles.arrowIcon}>›</Text>
+      <FontAwesome name="chevron-right" size={20} color="#CCC" />
     </TouchableOpacity>
   );
 }
@@ -406,7 +427,6 @@ const styles = StyleSheet.create({
   avatarText: { fontSize: 48, fontWeight: "bold", color: "white" },
   name: { fontSize: 24, fontWeight: "800", color: "#1A1A1A", marginTop: 16 },
   badgeContainer: { flexDirection: "row", alignItems: "center", marginTop: 8 },
-  checkIcon: { fontSize: 14, marginRight: 6 },
   badgeText: { color: "#2E7D32", fontWeight: "700", fontSize: 14 },
   phone: { color: "#888", marginTop: 8, fontSize: 15 },
   locationContainer: {
@@ -418,9 +438,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
     alignItems: "center",
   },
-  locationIcon: { fontSize: 12, marginRight: 6 },
   locationText: { color: "#2E7D32", fontWeight: "600", fontSize: 13, flex: 1 },
-  editLocationIcon: { fontSize: 12, marginLeft: 6 },
   statsRow: {
     flexDirection: "row",
     backgroundColor: "#F8FAF9",
@@ -457,10 +475,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginRight: 16,
   },
-  settingIcon: { fontSize: 20 },
   settingTitle: { fontSize: 16, fontWeight: "700", color: "#333" },
   settingSub: { fontSize: 12, color: "#999", marginTop: 2 },
-  arrowIcon: { fontSize: 24, color: "#CCC" },
   logoutButton: {
     marginTop: 20,
     paddingVertical: 16,
@@ -489,7 +505,6 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   modalTitle: { fontSize: 20, fontWeight: "800", color: "#1A1A1A" },
-  closeIcon: { fontSize: 24, color: "#999" },
   locationInput: {
     backgroundColor: "#F5F5F5",
     borderRadius: 12,
@@ -526,9 +541,5 @@ const styles = StyleSheet.create({
   languageOptionTextSelected: {
     color: "#2E7D32",
     fontWeight: "700",
-  },
-  checkMark: {
-    fontSize: 20,
-    color: "#2E7D32",
   },
 });

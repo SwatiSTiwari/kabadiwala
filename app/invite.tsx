@@ -1,4 +1,5 @@
 "use client";
+import { FontAwesome } from "@expo/vector-icons";
 import * as Clipboard from "expo-clipboard";
 import { useRouter } from "expo-router";
 import { useState } from "react";
@@ -92,7 +93,11 @@ export default function InviteScreen() {
               {APP_URL}
             </Text>
             <TouchableOpacity onPress={handleCopyLink}>
-              <Text>{copied ? "✅" : "📋"}</Text>
+              <FontAwesome
+                name={copied ? "check-circle" : "clipboard"}
+                size={20}
+                color="#2E7D32"
+              />
             </TouchableOpacity>
           </View>
         </View>
@@ -103,7 +108,12 @@ export default function InviteScreen() {
             style={styles.whatsappBtn}
             onPress={handleWhatsAppShare}
           >
-            <Text style={styles.whatsappIcon}>💬</Text>
+            <FontAwesome
+              name="whatsapp"
+              size={20}
+              color="white"
+              style={{ marginRight: 8 }}
+            />
             <Text style={styles.whatsappText}>WhatsApp pe Link Bhejein</Text>
           </TouchableOpacity>
 
@@ -112,10 +122,26 @@ export default function InviteScreen() {
               style={styles.actionBtn}
               onPress={handleDownloadQR}
             >
-              <Text>📥 Save QR</Text>
+              <FontAwesome
+                name="download"
+                size={16}
+                color="#827717"
+                style={{ marginRight: 6 }}
+              />
+              <Text style={{ color: "#827717", fontWeight: "600" }}>
+                Save QR
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.actionBtn} onPress={handleCopyLink}>
-              <Text>{copied ? "✅ Copied!" : "🔗 Copy Link"}</Text>
+              <FontAwesome
+                name={copied ? "check" : "link"}
+                size={16}
+                color="#827717"
+                style={{ marginRight: 6 }}
+              />
+              <Text style={{ color: "#827717", fontWeight: "600" }}>
+                {copied ? "Copied!" : "Copy Link"}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -123,7 +149,17 @@ export default function InviteScreen() {
         <View style={styles.footer}>
           <Text style={styles.footerText}>Kisi ka QR code scan karna hai?</Text>
           <TouchableOpacity onPress={() => router.push("/scan-qr")}>
-            <Text style={styles.footerLink}>📷 QR Scan Karein</Text>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 6,
+                marginTop: 8,
+              }}
+            >
+              <FontAwesome name="camera" size={16} color="#FBC02D" />
+              <Text style={styles.footerLink}>QR Scan Karein</Text>
+            </View>
           </TouchableOpacity>
         </View>
       </View>
