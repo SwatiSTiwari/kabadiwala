@@ -195,14 +195,76 @@ export async function getWasteBreakdown(userId: string) {
   }))
 }
 
-// Add function to update user location
 export async function updateUserLocation(userId: string, location: string) {
-  const { data, error } = await supabase
-    .from("user_profiles")
-    .update({ location })
-    .eq("id", userId)
-    .select()
+  const { data, error } = await supabase.from("user_profiles").update({ location }).eq("id", userId).select()
 
   if (error) throw error
   return data?.[0]
+}
+
+export async function exportUserData(userId: string) {
+  try {
+    const { data: entries, error: entriesError } = await supabase
+      .from("waste_entries")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+
+    if (entriesError) throw entriesError
+
+    const { data: profile, error: profileError } = await supabase
+      .from("user_profiles")
+      .select("*")
+      .eq("id", userId)
+      .single()
+
+    if (profileError) throw profileError
+
+    // Create CSV content
+    const headers = ["Date", "Waste Type", "Weight (kg)", "Rate (₹/kg)", "Total Earning (₹)"]
+    const rows = entries.map((entry: any) => [
+      new Date(entry.created_at).toLocaleDateString(),
+      entry.waste_type,
+      entry.weight,
+      entry.rate_per_kg,
+      entry.total_earning,
+    ])
+
+    const csvContent = [headers, ...rows].map((row) => row.join(",")).join("\n")
+
+    return {
+      filename: `kabadi_hisaab_${new Date().toISOString().split("T")[0]}.csv`,
+      content: csvContent,
+      profile,
+      totalEntries: entries.length,
+    }
+  } catch (error) {
+    console.log("[v0] Error exporting data:", error)
+    throw error
+  }
+}
+
+export async function updateLanguagePreference(userId: string, language: "Hindi" | "English" | "Hinglish") {
+  const { data, error } = await supabase
+    .from("user_profiles")
+    .update({ language_preference: language })
+    .eq("id", userId)
+    .select()
+
+  if (error) {
+    console.log("[v0] Error updating language:", error)
+    throw error
+  }
+  return data?.[0]
+}
+
+export async function getLanguagePreference(userId: string) {
+  const { data, error } = await supabase.from("user_profiles").select("language_preference").eq("id", userId).single()
+
+  if (error) {
+    console.log("[v0] Error fetching language preference:", error)
+    // Return default if column doesn't exist yet
+    return "English"
+  }
+  return data?.language_preference || "English"
 }

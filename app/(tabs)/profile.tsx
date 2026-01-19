@@ -1,4 +1,5 @@
-"use client"
+'use client';
+
 import {
   View,
   Text,
@@ -9,11 +10,22 @@ import {
   ActivityIndicator,
   TextInput,
   Modal,
+  Linking,
+  Share,
+  Alert,
 } from "react-native"
 import { useRouter } from "expo-router"
 import { useAuth } from "../../lib/auth-context"
-import { getUserProfile, getUserStats, updateUserLocation } from "../../lib/supabase-queries"
+import {
+  getUserProfile,
+  getUserStats,
+  updateUserLocation,
+  exportUserData,
+  updateLanguagePreference,
+  getLanguagePreference,
+} from "../../lib/supabase-queries"
 import { useEffect, useState } from "react"
+import * as Sharing from "expo-sharing"
 
 export default function ProfileScreen() {
   const router = useRouter()
@@ -24,10 +36,14 @@ export default function ProfileScreen() {
   const [locationModalVisible, setLocationModalVisible] = useState(false)
   const [newLocation, setNewLocation] = useState("")
   const [isSaving, setIsSaving] = useState(false)
+  const [languageModalVisible, setLanguageModalVisible] = useState(false)
+  const [selectedLanguage, setSelectedLanguage] = useState("English")
+  const [exporting, setExporting] = useState(false)
 
   useEffect(() => {
     if (user?.id) {
       loadProfileData()
+      loadLanguagePreference()
     }
   }, [user?.id])
 
@@ -47,9 +63,18 @@ export default function ProfileScreen() {
     }
   }
 
+  const loadLanguagePreference = async () => {
+    try {
+      const lang = await getLanguagePreference(user!.id)
+      setSelectedLanguage(lang)
+    } catch (error) {
+      console.log("[v0] Error loading language preference:", error)
+    }
+  }
+
   const handleSaveLocation = async () => {
     if (!newLocation.trim()) {
-      alert("Please enter a location")
+      Alert.alert("Error", "Please enter a location")
       return
     }
 
@@ -58,11 +83,69 @@ export default function ProfileScreen() {
       await updateUserLocation(user!.id, newLocation)
       setProfile({ ...profile, location: newLocation })
       setLocationModalVisible(false)
+      Alert.alert("Success", "Location updated successfully")
     } catch (error) {
       console.log("[v0] Error updating location:", error)
-      alert("Failed to update location")
+      Alert.alert("Error", "Failed to update location")
     } finally {
       setIsSaving(false)
+    }
+  }
+
+  const handleDataExport = async () => {
+    try {
+      setExporting(true)
+      const exportData = await exportUserData(user!.id)
+
+      // Share CSV content directly using native share
+      await Share.share({
+        message: exportData.content,
+        title: "Kabadi Hisaab Export",
+        url: undefined,
+      })
+
+      console.log("[v0] Export data shared successfully")
+      Alert.alert("Success", "Your waste collection data has been exported!")
+    } catch (error) {
+      console.log("[v0] Error exporting data:", error)
+      Alert.alert("Export Error", "Failed to export data. Please try again.")
+    } finally {
+      setExporting(false)
+    }
+  }
+
+  const handleLanguageChange = async (language: "Hindi" | "English" | "Hinglish") => {
+    try {
+      await updateLanguagePreference(user!.id, language)
+      setSelectedLanguage(language)
+      setLanguageModalVisible(false)
+      Alert.alert("Success", `Language changed to ${language}`)
+    } catch (error) {
+      console.log("[v0] Error updating language:", error)
+      Alert.alert("Error", "Failed to update language")
+    }
+  }
+
+  const handleSupportContact = async () => {
+    const supportEmail = "swatiduck13@gmail.com"
+    const supportPhone = "7208282243"
+    const subject = "Kabadi App Support"
+    const body = `Hello Swati,\n\nI need help with the Kabadi App.\n\nUser: ${profile?.name}\nPhone: ${profile?.phone}`
+
+    const mailtoUrl = `mailto:${supportEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+
+    try {
+      await Linking.openURL(mailtoUrl)
+    } catch (error) {
+      // Fallback to WhatsApp if email fails
+      const whatsappUrl = `https://wa.me/${supportPhone}?text=${encodeURIComponent(
+        `Hi Swati, I need support for the Kabadi App.\n\nMy name: ${profile?.name}`,
+      )}`
+      try {
+        await Linking.openURL(whatsappUrl)
+      } catch (whatsappError) {
+        alert("Please contact: swatiduck13@gmail.com or +91 7208282243")
+      }
     }
   }
 
@@ -126,10 +209,26 @@ export default function ProfileScreen() {
             sub="Scan karke connect karein"
             onPress={() => router.push("/invite")}
           />
-          <SettingItem icon="📥" title="Data export karo" sub="Excel format mein download karein" />
-          <SettingItem icon="🔤" title="Language badlo" sub="Hindi / English / Hinglish" />
+          <SettingItem
+            icon="📥"
+            title="Data export karo"
+            sub="Excel format mein download karein"
+            onPress={handleDataExport}
+            disabled={exporting}
+          />
+          <SettingItem
+            icon="🔤"
+            title="Language badlo"
+            sub={`Current: ${selectedLanguage}`}
+            onPress={() => setLanguageModalVisible(true)}
+          />
           <SettingItem icon="🔗" title="App share karein" sub="Doston ke saath" />
-          <SettingItem icon="🎧" title="Madad chahiye?" sub="Support team se baat karein" />
+          <SettingItem
+            icon="🎧"
+            title="Madad chahiye?"
+            sub="Support team se baat karein"
+            onPress={handleSupportContact}
+          />
 
           <TouchableOpacity
             style={styles.logoutButton}
@@ -180,13 +279,52 @@ export default function ProfileScreen() {
           </View>
         </View>
       </Modal>
+
+      <Modal
+        visible={languageModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setLanguageModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Language</Text>
+              <TouchableOpacity onPress={() => setLanguageModalVisible(false)}>
+                <Text style={styles.closeIcon}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            {["English", "Hindi", "Hinglish"].map((lang) => (
+              <TouchableOpacity
+                key={lang}
+                style={[styles.languageOption, selectedLanguage === lang && styles.languageOptionSelected]}
+                onPress={() => handleLanguageChange(lang as "Hindi" | "English" | "Hinglish")}
+              >
+                <Text
+                  style={[styles.languageOptionText, selectedLanguage === lang && styles.languageOptionTextSelected]}
+                >
+                  {lang === "English" ? "🇬🇧 English" : lang === "Hindi" ? "🇮🇳 हिंदी (Hindi)" : "🔤 Hinglish"}
+                </Text>
+                {selectedLanguage === lang && <Text style={styles.checkMark}>✓</Text>}
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   )
 }
 
-function SettingItem({ icon, title, sub, onPress }: { icon: string; title: string; sub: string; onPress?: () => void }) {
+function SettingItem({ icon, title, sub, onPress, disabled = false }: {
+  icon: string;
+  title: string;
+  sub: string;
+  onPress?: () => void;
+  disabled?: boolean;
+}) {
   return (
-    <TouchableOpacity style={styles.settingItem} onPress={onPress}>
+    <TouchableOpacity style={[styles.settingItem, disabled && { opacity: 0.6 }]} onPress={onPress} disabled={disabled}>
       <View style={styles.itemLeft}>
         <View style={styles.settingIconBox}>
           <Text style={styles.settingIcon}>{icon}</Text>
@@ -310,4 +448,29 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   saveButtonText: { color: "white", fontSize: 16, fontWeight: "700" },
+  languageOption: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F0F0F0",
+  },
+  languageOptionSelected: {
+    backgroundColor: "#E8F5E9",
+  },
+  languageOptionText: {
+    fontSize: 16,
+    color: "#666",
+    fontWeight: "500",
+  },
+  languageOptionTextSelected: {
+    color: "#2E7D32",
+    fontWeight: "700",
+  },
+  checkMark: {
+    fontSize: 20,
+    color: "#2E7D32",
+  },
 })
