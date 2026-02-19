@@ -127,7 +127,8 @@ export default function HistoryScreen() {
           <Text style={styles.backIcon}>←</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Pichhla hisaab</Text>
-        <TouchableOpacity>
+        <TouchableOpacity onPress={() => router.push("/stats")}>
+          
           <FontAwesome name="download" size={20} color="#333" />
         </TouchableOpacity>
       </View>

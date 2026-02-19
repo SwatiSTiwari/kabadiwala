@@ -31,7 +31,7 @@ export default function StatsScreen() {
       setBreakdown(wasteBreakdown)
       setWeeklyStats({ earning: weekly.totalEarning, weight: weekly.totalWeight })
     } catch (error) {
-      console.log("[v0] Error loading stats:", error)
+      console.log("Error loading stats:", error)
     } finally {
       setLoading(false)
     }
